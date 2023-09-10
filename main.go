@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -33,12 +34,7 @@ func main() {
 		} else {
 			c.Set(isThroughProxyKey, true)
 			// 检查本地是否存在对应的静态文件
-			filePath := filepath.Join("wwwroot", c.Request.URL.Path) // 静态文件路径，可根据需要进行调整
-			if len(filePath) == 0 {
-				proxy.ReverseProxy(c)
-			}
-			_, err := os.Stat(filePath)
-			if err == nil {
+			if filePath, exist := existStaticFile(c.Request.URL.Path); exist {
 				c.File(filePath)
 				c.Set(sourceFlagKey, modified)
 				c.Writer.Header().Set(sourceFlagKey, modified)
@@ -72,6 +68,15 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		// 设置响应头中的请求 ID
 		c.Writer.Header().Set("X-Request-ID", requestID)
 	}
+}
+
+func existStaticFile(path string) (abspath string, exist bool) {
+	if len(path) == 0 || path == "/" {
+		path = "/index.html"
+	}
+	filePath := filepath.Join("wwwroot", path) // 静态文件路径，可根据需要进行调整
+	_, err := os.Stat(filePath)
+	return filePath, err == nil
 }
 
 // 登录用户
